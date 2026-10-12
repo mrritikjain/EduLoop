@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./db.js";
 import authRoute from "./Routes/authRoutes.js";
+import listingRoute from "./Routes/listingRoute.js";
 dotenv.config();
 
 const app = express();
@@ -17,6 +18,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoute);
+app.use("/api/listings", listingRoute);
 
 // 404 Handler for undefined routes
 app.use((req, res) => {
