@@ -76,3 +76,92 @@ export const getListingById = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+export const updateListing = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid listing ID format" });
+    }
+
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+
+    // Ownership check: only seller can update their listing
+    if (listing.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to update this listing" });
+    }
+
+    const { title, description, desc, category, price, condition, status } = req.body || {};
+    const itemDescription = description || desc;
+
+    if (title) listing.title = title;
+    if (itemDescription) listing.description = itemDescription;
+    if (category) listing.category = category;
+    if (price !== undefined) listing.price = Number(price);
+    if (condition) listing.condition = condition;
+    if (status) listing.status = status;
+
+    const updatedListing = await listing.save();
+    return res.status(200).json({ message: "Listing updated successfully", listing: updatedListing });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const deleteListing = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid listing ID format" });
+    }
+
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+
+    // Ownership check: only seller can delete their listing
+    if (listing.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to delete this listing" });
+    }
+
+    await Listing.findByIdAndDelete(id);
+    return res.status(200).json({ message: "Listing deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Alias for backwards compatibility
+export const deletListing = deleteListing;
+
+export const markasSold = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid listing ID format" });
+    }
+
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+
+    // Ownership check: only seller can mark listing as sold
+    if (listing.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to modify this listing" });
+    }
+
+    listing.status = "Sold";
+    await listing.save();
+    return res.status(200).json({ message: "Listing marked as sold", listing });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
